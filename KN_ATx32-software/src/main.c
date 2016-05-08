@@ -1,40 +1,26 @@
-/**
- * \file
- *
- * \brief Empty user application template
- *
- */
-
-/**
- * \mainpage User Application template doxygen documentation
- *
- * \par Empty user application template
- *
- * Bare minimum empty user application template
- *
- * \par Content
- *
- * -# Include the ASF header files (through asf.h)
- * -# "Insert system clock initialization code here" comment
- * -# Minimal main function that starts with a call to board_init()
- * -# "Insert application code here" comment
- *
- */
-
 /*
- * Include header files for all drivers that have been imported from
- * Atmel Software Framework (ASF).
- */
-/*
- * Support and FAQ: visit <a href="http://www.atmel.com/design-support/">Atmel Support</a>
+ * Support and FAQ: visit <a href="http://www.kn2c.ir">KN2C Robotic Team</a>
  */
 #include <asf.h>
 
 int main (void)
 {
-	/* Insert system clock initialization code here (sysclk_init()). */
-
-	board_init();
-
-	/* Insert application code here, after the board has been initialized. */
+	sysclk_init();
+	ioport_init();
+	
+	ioport_set_pin_dir(LED_BLUE, IOPORT_DIR_OUTPUT);
+	ioport_set_pin_dir(LED_GREEN, IOPORT_DIR_OUTPUT);
+	ioport_set_pin_dir(LED_WHITE, IOPORT_DIR_OUTPUT);
+	
+	ioport_configure_pin(BUTTON_0, IOPORT_PULL_UP);
+	ioport_configure_pin(BUTTON_1, IOPORT_PULL_UP);
+	//board_init();
+	
+	while(1)
+	{
+		ioport_toggle_pin_level(LED_GREEN);
+		delay_ms(100);
+		ioport_set_pin_level(LED_BLUE, ioport_get_pin_level(BUTTON_0));
+		ioport_set_pin_level(LED_WHITE, ioport_get_pin_level(BUTTON_1));
+	}
 }
