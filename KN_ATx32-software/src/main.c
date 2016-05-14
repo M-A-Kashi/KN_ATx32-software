@@ -15,7 +15,10 @@ int main (void)
 	ioport_configure_pin(BUTTON_0, IOPORT_PULL_UP);
 	ioport_configure_pin(BUTTON_1, IOPORT_PULL_UP);
 	//board_init();
-	
+	if ( !ioport_get_pin_level(BUTTON_1) &  !ioport_get_pin_level(BUTTON_0))
+	{
+		goto *(BOOT_SECTION_START + 0x1FC) ;
+	}
 	while(1)
 	{
 		ioport_toggle_pin_level(LED_GREEN);
