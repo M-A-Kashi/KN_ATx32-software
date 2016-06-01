@@ -2,26 +2,11 @@
  * Support and FAQ: visit <a href="http://www.kn2c.ir">KN2C Robotic Team</a>
  */
 #include <asf.h>
-void force_boot_loader(void);
+
 
 int main (void)
 {
-	sysclk_init();
-	ioport_init();
-	
-	ioport_set_pin_dir(LED_BLUE, IOPORT_DIR_OUTPUT);
-	ioport_set_pin_dir(LED_GREEN, IOPORT_DIR_OUTPUT);
-	ioport_set_pin_dir(LED_WHITE, IOPORT_DIR_OUTPUT);
-	
-	ioport_configure_pin(BUTTON_0, IOPORT_PULL_UP);
-	ioport_configure_pin(BUTTON_1, IOPORT_PULL_UP);
-
-	force_boot_loader();
-	
-	irq_initialize_vectors();
-	cpu_irq_enable();
-	udc_start();
-	//board_init();
+	board_init();
 
 	while(1)
 	{
@@ -40,14 +25,3 @@ int main (void)
 		udi_cdc_putc('\r');
 	}
 }
-
-
-void force_boot_loader(void)
-{
-	if ( !ioport_get_pin_level(BUTTON_1) |  !ioport_get_pin_level(BUTTON_0))
-	{
-		goto *(BOOT_SECTION_START + 0x1FC) ;
-	}
-}
-
-
