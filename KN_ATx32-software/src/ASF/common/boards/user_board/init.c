@@ -28,6 +28,12 @@ void board_init(void)
 
 	force_boot_loader();
 	
+	// Instead of configuring conf_clock. h use these settings to avoid corrupting USB settings
+	uint8_t id = SYSCLK_RTCSRC_RCOSC;
+	CLK.RTCCTRL = id | CLK_RTCEN_bm;
+	
+	rtc_init();
+	
 	irq_initialize_vectors();
 	cpu_irq_enable();
 	udc_start();
