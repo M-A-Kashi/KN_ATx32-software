@@ -238,10 +238,10 @@ void rtc_init(void)
  * \internal
  * \brief Overflow interrupt handling high counter
  */
-ISR(RTC_OVF_vect)
-{
-	rtc_data.counter_high++;
-}
+// ISR(RTC_OVF_vect)
+// {
+// 	rtc_data.counter_high++;
+// }
 
 /**
  * \internal

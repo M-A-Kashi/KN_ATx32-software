@@ -35,13 +35,16 @@ void board_init(void)
 	spi_init_pins();
 	// Boot-loader setting
 	force_boot_loader();
-	
+	// RTC setting
 	// Instead of configuring conf_clock. h use these settings to avoid corrupting USB settings
 	uint8_t id = SYSCLK_RTCSRC_RCOSC;
 	CLK.RTCCTRL = id | CLK_RTCEN_bm;
-	
 	rtc_init();
-	
+	// setting period for overflow interrupt after 1s
+	while(RTC.STATUS & RTC_SYNCBUSY_bm)
+	RTC.PER = 1;
+	RTC.CNT = 0;
+	// USB settings
 	irq_initialize_vectors();
 	cpu_irq_enable();
 	udc_start();

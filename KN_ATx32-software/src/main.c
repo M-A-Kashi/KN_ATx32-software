@@ -4,6 +4,13 @@
 #include <asf.h>
 #include <stdio.h>
 void wireless_connection ( void );
+void clock_1s(void);
+struct clock_time
+{
+	uint8_t hour;
+	uint8_t minute;
+	uint8_t second;
+	}sys_time;
 int main (void)
 {
 	board_init();
@@ -16,7 +23,7 @@ int main (void)
 		
 
 		char usb_out [100];
-		uint8_t count = sprintf(usb_out, "TIME : %ld \r",rtc_get_time());
+		uint8_t count = sprintf(usb_out, "TIME : %d:%d:%d    %d \r",sys_time.hour,sys_time.minute,sys_time.second,RTC.PER);
 		for (int i=0;i<count;i++)
 		{
 			udi_cdc_putc(usb_out[i]);
@@ -54,4 +61,22 @@ void wireless_connection ( void )
 		NRF24L01_Flush_TX();
 	}
 }
+ISR(RTC_OVF_vect)
+{
+ 	sys_time.second ++;
+	 if(sys_time.second == 60)
+	 {
+		 sys_time.second = 0;
+		 sys_time.minute ++;
+		 if (sys_time.minute == 60)
+		 {
+			 sys_time.minute = 0;
+			 sys_time.hour ++;
+			 if (sys_time.hour == 24)
+			 {
+				 sys_time.hour = 0;
+			 }
+		 }
+	 }
+	ioport_toggle_pin_level(LED_GREEN);
 }
