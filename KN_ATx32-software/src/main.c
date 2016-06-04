@@ -5,12 +5,19 @@
 #include <stdio.h>
 void wireless_connection ( void );
 void clock_1s(void);
+void e_valve(void);
 struct clock_time
 {
 	uint8_t hour;
 	uint8_t minute;
 	uint8_t second;
-	}sys_time;
+}sys_time;
+
+struct task
+{
+	bool wattering;
+	bool lighting;
+}today_task;
 int main (void)
 {
 	board_init();
@@ -20,10 +27,10 @@ int main (void)
 		delay_ms(20);
 		ioport_set_pin_level(LED_WHITE,HIGH);
 		ioport_set_pin_level(LED_BLUE,HIGH);
-		
+		e_valve();
 
 		char usb_out [100];
-		uint8_t count = sprintf(usb_out, "TIME : %d:%d:%d    %d \r",sys_time.hour,sys_time.minute,sys_time.second,RTC.PER);
+		uint8_t count = sprintf(usb_out, "TIME : %d:%d:%d    %d \r",sys_time.hour,sys_time.minute,sys_time.second,RTC.CNT);
 		for (int i=0;i<count;i++)
 		{
 			udi_cdc_putc(usb_out[i]);
@@ -61,6 +68,30 @@ void wireless_connection ( void )
 		NRF24L01_Flush_TX();
 	}
 }
+
+
+void e_valve (void)
+{
+	if(sys_time.hour == 0 && sys_time.minute == 0) 
+	{
+		today_task.lighting = false;
+	}
+	if(sys_time.hour == 7 && sys_time.minute == 0) 
+	{
+		ioport_set_pin_high(DRIVER_IN1);
+		ioport_set_pin_high(DRIVER_ENA);
+		today_task.wattering = true;
+	}
+	
+	if(sys_time.hour == 7 && sys_time.minute == 4)
+	{
+		ioport_set_pin_low(DRIVER_IN1);
+		ioport_set_pin_low(DRIVER_ENA);
+	}
+	
+}
+
+
 ISR(RTC_OVF_vect)
 {
  	sys_time.second ++;

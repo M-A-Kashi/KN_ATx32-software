@@ -42,7 +42,7 @@ void board_init(void)
 	rtc_init();
 	// setting period for overflow interrupt after 1s
 	while(RTC.STATUS & RTC_SYNCBUSY_bm)
-	RTC.PER = 1;
+	RTC.PER = 1023;
 	RTC.CNT = 0;
 	// USB settings
 	irq_initialize_vectors();
