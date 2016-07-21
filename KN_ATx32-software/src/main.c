@@ -3,6 +3,10 @@
  */
 #include <asf.h>
 #include <stdio.h>
+
+#define  WATTERING_TIME_MINUTE 35
+#define  WATTERING_TIME_HOUR 9
+#define  WATTERING_DURATION 5
 void wireless_connection ( void );
 void clock_1s(void);
 void e_valve(void);
@@ -11,7 +15,7 @@ struct clock_time
 	uint8_t hour;
 	uint8_t minute;
 	uint8_t second;
-}sys_time;
+}sys_time={.hour=9,.minute=34,.second=55};
 
 struct task
 {
@@ -24,10 +28,24 @@ int main (void)
 
 	while(1)
 	{
+		
 		delay_ms(20);
 		ioport_set_pin_level(LED_WHITE,HIGH);
-		ioport_set_pin_level(LED_BLUE,HIGH);
+		/*ioport_set_pin_level(LED_BLUE,HIGH);*/
 		e_valve();
+		
+		if (!ioport_get_pin_level(BUTTON_0))
+		{
+			ioport_set_pin_high(DRIVER_ENB);
+			ioport_set_pin_high(DRIVER_IN3);
+			ioport_set_pin_low(DRIVER_IN4);
+			ioport_set_pin_level(LED_BLUE,LOW);
+			while(!ioport_get_pin_level(BUTTON_0))
+			ioport_set_pin_low(DRIVER_ENB);
+			ioport_set_pin_high(DRIVER_IN3);
+			ioport_set_pin_low(DRIVER_IN4);
+			ioport_set_pin_level(LED_BLUE,HIGH);
+		}
 
 		char usb_out [100];
 		uint8_t count = sprintf(usb_out, "TIME : %d:%d:%d    %d \r",sys_time.hour,sys_time.minute,sys_time.second,RTC.CNT);
@@ -43,6 +61,7 @@ ISR(PORTC_INT0_vect)//PRX   IRQ Interrupt Pin
 {
 	wireless_connection();
 }
+
 char spi_rx_buf[_Buffer_Size] ;
 void wireless_connection ( void )
 {
@@ -76,17 +95,21 @@ void e_valve (void)
 	{
 		today_task.lighting = false;
 	}
-	if(sys_time.hour == 7 && sys_time.minute == 0) 
+	if(sys_time.hour == WATTERING_TIME_HOUR && sys_time.minute == WATTERING_TIME_MINUTE) 
 	{
-		ioport_set_pin_high(DRIVER_IN1);
-		ioport_set_pin_high(DRIVER_ENA);
+		ioport_set_pin_high(DRIVER_ENB);
+		ioport_set_pin_high(DRIVER_IN3);
+		ioport_set_pin_low(DRIVER_IN4);
+		ioport_set_pin_level(LED_BLUE,LOW);
 		today_task.wattering = true;
 	}
 	
-	if(sys_time.hour == 7 && sys_time.minute == 4)
+	if(sys_time.hour == WATTERING_TIME_HOUR && sys_time.minute == WATTERING_TIME_MINUTE + WATTERING_DURATION)
 	{
-		ioport_set_pin_low(DRIVER_IN1);
-		ioport_set_pin_low(DRIVER_ENA);
+		ioport_set_pin_low(DRIVER_ENB);
+		ioport_set_pin_high(DRIVER_IN3);
+		ioport_set_pin_low(DRIVER_IN4);
+		ioport_set_pin_level(LED_BLUE,HIGH);
 	}
 	
 }

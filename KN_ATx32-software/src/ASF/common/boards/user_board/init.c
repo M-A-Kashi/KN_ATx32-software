@@ -27,11 +27,20 @@ void board_init(void)
 	sysclk_init();
 	// Initializes GPIO
 	ioport_init();
+	
+	
 	ioport_configure_pin(LED_BLUE, IOPORT_DIR_OUTPUT | IOPORT_INIT_HIGH);
 	ioport_configure_pin(LED_GREEN, IOPORT_DIR_OUTPUT | IOPORT_INIT_HIGH);
 	ioport_configure_pin(LED_WHITE, IOPORT_DIR_OUTPUT | IOPORT_INIT_HIGH);
 	ioport_configure_pin(BUTTON_0, IOPORT_PULL_UP);
 	ioport_configure_pin(BUTTON_1, IOPORT_PULL_UP);
+	
+	ioport_configure_pin(DRIVER_IN1, IOPORT_DIR_OUTPUT | IOPORT_INIT_LOW);
+	ioport_configure_pin(DRIVER_IN2, IOPORT_DIR_OUTPUT | IOPORT_INIT_LOW);
+	ioport_configure_pin(DRIVER_IN3, IOPORT_DIR_OUTPUT | IOPORT_INIT_LOW);
+	ioport_configure_pin(DRIVER_IN4, IOPORT_DIR_OUTPUT | IOPORT_INIT_LOW);
+	ioport_configure_pin(DRIVER_ENA, IOPORT_DIR_OUTPUT | IOPORT_INIT_LOW);
+	ioport_configure_pin(DRIVER_ENB, IOPORT_DIR_OUTPUT | IOPORT_INIT_LOW);
 	spi_init_pins();
 	// Boot-loader setting
 	force_boot_loader();
@@ -47,7 +56,11 @@ void board_init(void)
 	// USB settings
 	irq_initialize_vectors();
 	cpu_irq_enable();
-	udc_start();
+	//udc_start();
+	if (ioport_get_pin_level(USB_DETECT))
+	{
+		udc_start();
+	}
 	//SPI settings
 	spi_init_module();
 	module_id_set();
