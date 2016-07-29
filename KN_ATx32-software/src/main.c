@@ -4,18 +4,21 @@
 #include <asf.h>
 #include <stdio.h>
 
-#define  WATTERING_TIME_MINUTE 35
-#define  WATTERING_TIME_HOUR 9
-#define  WATTERING_DURATION 5
+#define WATTERING_DURATION 1
+#define OPEN  1
+#define CLOSE 0
 void wireless_connection ( void );
 void clock_1s(void);
-void e_valve(void);
+void valve_manager(void);
+void e_valve (uint8_t valve_number, bool state);
 struct clock_time
 {
 	uint8_t hour;
 	uint8_t minute;
 	uint8_t second;
-}sys_time={.hour=9,.minute=34,.second=55};
+}sys_time={.hour=11,.minute=45,.second=0},wth[3]; // wth : Wattering Time
+
+
 
 struct task
 {
@@ -25,25 +28,26 @@ struct task
 int main (void)
 {
 	board_init();
-
+	wth[0].hour = 9;wth[1].hour = 12;wth[2].hour = 15;
+	wth[0].minute = 0;wth[1].minute = 0;wth[2].minute = 0;
 	while(1)
 	{
 		
 		delay_ms(20);
 		ioport_set_pin_level(LED_WHITE,HIGH);
 		/*ioport_set_pin_level(LED_BLUE,HIGH);*/
-		e_valve();
+		valve_manager();
 		
 		if (!ioport_get_pin_level(BUTTON_0))
 		{
-			ioport_set_pin_high(DRIVER_ENB);
-			ioport_set_pin_high(DRIVER_IN3);
-			ioport_set_pin_low(DRIVER_IN4);
+			ioport_set_pin_high(DRIVER_ENA);
+			ioport_set_pin_high(DRIVER_IN1);
+			ioport_set_pin_low(DRIVER_IN2);
 			ioport_set_pin_level(LED_BLUE,LOW);
 			while(!ioport_get_pin_level(BUTTON_0))
-			ioport_set_pin_low(DRIVER_ENB);
-			ioport_set_pin_high(DRIVER_IN3);
-			ioport_set_pin_low(DRIVER_IN4);
+			ioport_set_pin_low(DRIVER_ENA);
+			ioport_set_pin_high(DRIVER_IN1);
+			ioport_set_pin_low(DRIVER_IN2);
 			ioport_set_pin_level(LED_BLUE,HIGH);
 		}
 
@@ -89,29 +93,29 @@ void wireless_connection ( void )
 }
 
 
-void e_valve (void)
+void valve_manager (void)
 {
+	static bool valve_manager_flag = false;
+	static uint8_t turn = 0;
 	if(sys_time.hour == 0 && sys_time.minute == 0) 
 	{
 		today_task.lighting = false;
+		turn = 0;
 	}
-	if(sys_time.hour == WATTERING_TIME_HOUR && sys_time.minute == WATTERING_TIME_MINUTE) 
+	
+	if((sys_time.hour == wth[turn].hour) && (sys_time.minute == wth[turn].minute) && !valve_manager_flag) 
 	{
-		ioport_set_pin_high(DRIVER_ENB);
-		ioport_set_pin_high(DRIVER_IN3);
-		ioport_set_pin_low(DRIVER_IN4);
-		ioport_set_pin_level(LED_BLUE,LOW);
+		e_valve(2,OPEN);
 		today_task.wattering = true;
+		turn ++ ;
+		valve_manager_flag = true;
 	}
 	
-	if(sys_time.hour == WATTERING_TIME_HOUR && sys_time.minute == WATTERING_TIME_MINUTE + WATTERING_DURATION)
+	if((sys_time.hour == wth[turn].hour) && (sys_time.minute == wth[turn].minute + WATTERING_DURATION))
 	{
-		ioport_set_pin_low(DRIVER_ENB);
-		ioport_set_pin_high(DRIVER_IN3);
-		ioport_set_pin_low(DRIVER_IN4);
-		ioport_set_pin_level(LED_BLUE,HIGH);
+		e_valve(2,CLOSE);
+		valve_manager_flag = false;
 	}
-	
 }
 
 
@@ -133,4 +137,54 @@ ISR(RTC_OVF_vect)
 		 }
 	 }
 	ioport_toggle_pin_level(LED_GREEN);
+}
+
+void e_valve (uint8_t valve_number, bool state)
+{
+	if (state == OPEN)
+	{
+		switch (valve_number)
+		{
+			case 1:
+			ioport_set_pin_high(DRIVER_ENA);
+			ioport_set_pin_high(DRIVER_IN1);
+			ioport_set_pin_low(DRIVER_IN2);
+			ioport_set_pin_level(LED_BLUE,LOW);
+			break;
+			
+			case 2:
+			ioport_set_pin_high(DRIVER_ENB);
+			ioport_set_pin_high(DRIVER_IN3);
+			ioport_set_pin_low(DRIVER_IN4);
+			ioport_set_pin_level(LED_BLUE,LOW);
+			break;
+			
+			default:
+			break;
+		}
+	}
+	
+	if (state == CLOSE)
+	{
+		switch (valve_number)
+		{
+			case 1:
+			ioport_set_pin_low(DRIVER_ENA);
+			ioport_set_pin_high(DRIVER_IN1);
+			ioport_set_pin_low(DRIVER_IN2);
+			ioport_set_pin_level(LED_BLUE,HIGH);
+			break;
+			
+			case 2:
+			ioport_set_pin_low(DRIVER_ENB);
+			ioport_set_pin_high(DRIVER_IN3);
+			ioport_set_pin_low(DRIVER_IN4);
+			ioport_set_pin_level(LED_BLUE,HIGH);
+			break;
+			
+			default:
+			break;
+		}
+	}
+	
 }
