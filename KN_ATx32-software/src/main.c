@@ -4,7 +4,7 @@
 #include <asf.h>
 #include <stdio.h>
 
-#define WATTERING_DURATION 1
+#define WATTERING_DURATION 2
 #define OPEN  1
 #define CLOSE 0
 void wireless_connection ( void );
@@ -16,7 +16,7 @@ struct clock_time
 	uint8_t hour;
 	uint8_t minute;
 	uint8_t second;
-}sys_time={.hour=11,.minute=45,.second=0},wth[3]; // wth : Wattering Time
+}sys_time={.hour=9,.minute=20,.second=0},wth[3]; // wth : Wattering Time
 
 
 
@@ -96,24 +96,24 @@ void wireless_connection ( void )
 void valve_manager (void)
 {
 	static bool valve_manager_flag = false;
-	static uint8_t turn = 0;
+	static uint8_t turn = 1;
 	if(sys_time.hour == 0 && sys_time.minute == 0) 
 	{
 		today_task.lighting = false;
 		turn = 0;
 	}
 	
-	if((sys_time.hour == wth[turn].hour) && (sys_time.minute == wth[turn].minute) && !valve_manager_flag) 
+	if((sys_time.hour == wth[turn].hour) && (sys_time.minute == wth[turn].minute)) 
 	{
 		e_valve(2,OPEN);
 		today_task.wattering = true;
-		turn ++ ;
 		valve_manager_flag = true;
 	}
 	
-	if((sys_time.hour == wth[turn].hour) && (sys_time.minute == wth[turn].minute + WATTERING_DURATION))
+	if((sys_time.hour == wth[turn].hour) && (sys_time.minute == wth[turn].minute + WATTERING_DURATION) && valve_manager_flag)
 	{
 		e_valve(2,CLOSE);
+		turn ++ ;
 		valve_manager_flag = false;
 	}
 }
