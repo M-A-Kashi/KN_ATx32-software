@@ -4,7 +4,7 @@
 #include <asf.h>
 #include <stdio.h>
 
-#define WATTERING_DURATION 2
+#define WATTERING_DURATION 1
 #define OPEN  1
 #define CLOSE 0
 void wireless_connection ( void );
@@ -16,7 +16,7 @@ struct clock_time
 	uint8_t hour;
 	uint8_t minute;
 	uint8_t second;
-}sys_time={.hour=9,.minute=20,.second=0},wth[3]; // wth : Wattering Time
+}sys_time={.hour=10,.minute=30,.second=0},wth[2]; // wth : Wattering Time
 
 
 
@@ -28,8 +28,8 @@ struct task
 int main (void)
 {
 	board_init();
-	wth[0].hour = 9;wth[1].hour = 12;wth[2].hour = 15;
-	wth[0].minute = 0;wth[1].minute = 0;wth[2].minute = 0;
+	wth[0].hour = 9;  wth[1].hour = 15;
+	wth[0].minute = 0;wth[1].minute = 0;
 	while(1)
 	{
 		
