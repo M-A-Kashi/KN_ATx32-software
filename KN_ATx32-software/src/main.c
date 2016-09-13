@@ -16,7 +16,7 @@ struct clock_time
 	uint8_t hour;
 	uint8_t minute;
 	uint8_t second;
-}sys_time={.hour=10,.minute=30,.second=0},wth[2]; // wth : Wattering Time
+}sys_time={.hour=18,.minute=45,.second=0},wth[2]; // wth : Wattering Time
 
 
 
@@ -30,24 +30,21 @@ int main (void)
 	board_init();
 	wth[0].hour = 9;  wth[1].hour = 15;
 	wth[0].minute = 0;wth[1].minute = 0;
+	
+// 	ioport_set_pin_level(LED_WHITE,LOW);
+// 	ioport_set_pin_level(LED_BLUE,LOW);
 	while(1)
 	{
 		
-		delay_ms(20);
-		ioport_set_pin_level(LED_WHITE,HIGH);
-		/*ioport_set_pin_level(LED_BLUE,HIGH);*/
 		valve_manager();
 		
 		if (!ioport_get_pin_level(BUTTON_0))
 		{
-			ioport_set_pin_high(DRIVER_ENA);
-			ioport_set_pin_high(DRIVER_IN1);
-			ioport_set_pin_low(DRIVER_IN2);
+			e_valve(2,OPEN);
 			ioport_set_pin_level(LED_BLUE,LOW);
-			while(!ioport_get_pin_level(BUTTON_0))
-			ioport_set_pin_low(DRIVER_ENA);
-			ioport_set_pin_high(DRIVER_IN1);
-			ioport_set_pin_low(DRIVER_IN2);
+			delay_ms(3);
+			while(!ioport_get_pin_level(BUTTON_0));
+			e_valve(2,CLOSE);
 			ioport_set_pin_level(LED_BLUE,HIGH);
 		}
 		
