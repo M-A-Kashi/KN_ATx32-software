@@ -50,12 +50,15 @@ int main (void)
 			ioport_set_pin_low(DRIVER_IN2);
 			ioport_set_pin_level(LED_BLUE,HIGH);
 		}
-
-		char usb_out [100];
-		uint8_t count = sprintf(usb_out, "TIME : %d:%d:%d    %d \r",sys_time.hour,sys_time.minute,sys_time.second,RTC.CNT);
-		for (int i=0;i<count;i++)
+		
+		if (USB_INTFLAGSASET == 132)
 		{
-			udi_cdc_putc(usb_out[i]);
+			char usb_out [100];
+			uint8_t count = sprintf(usb_out, "TIME : %d:%d:%d    %d \r",sys_time.hour,sys_time.minute,sys_time.second,RTC.CNT);
+			for (int i=0;i<count;i++)
+			{
+				udi_cdc_putc(usb_out[i]);
+			}
 		}
 	}
 }
