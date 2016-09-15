@@ -45,6 +45,11 @@ int main (void)
 			e_valve(2,CLOSE);
 			ioport_set_pin_level(LED_BLUE,HIGH);
 		}
+		if (!ioport_get_pin_level(BUTTON_1))
+		{
+			sys_time.minute++;
+			while(!ioport_get_pin_level(BUTTON_1));
+		}
 		
 		if (USB_INTFLAGSASET == 132)
 		{
