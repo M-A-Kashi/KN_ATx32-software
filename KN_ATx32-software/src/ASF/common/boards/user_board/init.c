@@ -56,11 +56,7 @@ void board_init(void)
 	// USB settings
 	irq_initialize_vectors();
 	cpu_irq_enable();
-	//udc_start();
-	if (ioport_get_pin_level(USB_DETECT))
-	{
-		udc_start();
-	}
+	udc_start();
 	//SPI settings
 	spi_init_module();
 	module_id_set();

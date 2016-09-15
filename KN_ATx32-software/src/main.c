@@ -16,7 +16,7 @@ struct clock_time
 	uint8_t hour;
 	uint8_t minute;
 	uint8_t second;
-}sys_time={.hour=18,.minute=45,.second=0},wth[2]; // wth : Wattering Time
+}sys_time={.hour=14,.minute=59,.second=45},wth[2]; // wth : Wattering Time
 
 
 
@@ -31,8 +31,6 @@ int main (void)
 	wth[0].hour = 9;  wth[1].hour = 15;
 	wth[0].minute = 0;wth[1].minute = 0;
 	
-// 	ioport_set_pin_level(LED_WHITE,LOW);
-// 	ioport_set_pin_level(LED_BLUE,LOW);
 	while(1)
 	{
 		
