@@ -16,9 +16,11 @@ struct clock_time
 	uint8_t hour;
 	uint8_t minute;
 	uint8_t second;
-}sys_time={.hour=14,.minute=59,.second=45},wth[2]; // wth : Wattering Time
+}sys_time={.hour=14,.minute=20,.second=45},wth[2]; // wth : Wattering Time
 
-
+bool valve_manager_flag = false;
+uint8_t turn = 1;
+int test;
 
 struct task
 {
@@ -54,11 +56,15 @@ int main (void)
 		if (USB_INTFLAGSASET == 132)
 		{
 			char usb_out [100];
-			uint8_t count = sprintf(usb_out, "TIME : %d:%d:%d    %d \r",sys_time.hour,sys_time.minute,sys_time.second,RTC.CNT);
+			uint8_t count = sprintf(usb_out, "TIME : %d:%d:%d    %d  %d  %d   times of wattering: %d \r",sys_time.hour,sys_time.minute,sys_time.second,RTC.CNT,turn,valve_manager_flag,test);
 			for (int i=0;i<count;i++)
 			{
 				udi_cdc_putc(usb_out[i]);
 			}
+		}
+		else
+		{
+			delay_us(2);
 		}
 	}
 }
@@ -98,19 +104,18 @@ void wireless_connection ( void )
 
 void valve_manager (void)
 {
-	static bool valve_manager_flag = false;
-	static uint8_t turn = 1;
 	if(sys_time.hour == 0 && sys_time.minute == 0) 
 	{
 		today_task.lighting = false;
 		turn = 0;
 	}
 	
-	if((sys_time.hour == wth[turn].hour) && (sys_time.minute == wth[turn].minute)) 
+	if((sys_time.hour == wth[turn].hour) && (sys_time.minute == wth[turn].minute) && !valve_manager_flag) 
 	{
 		e_valve(2,OPEN);
 		today_task.wattering = true;
 		valve_manager_flag = true;
+		test ++;
 	}
 	
 	if((sys_time.hour == wth[turn].hour) && (sys_time.minute == wth[turn].minute + WATTERING_DURATION) && valve_manager_flag)
