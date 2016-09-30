@@ -3,6 +3,7 @@
  */
 #include <asf.h>
 #include <stdio.h>
+#include <usb_device.h>
 
 #define WATTERING_DURATION 1
 #define OPEN  1
@@ -11,22 +12,25 @@ void wireless_connection ( void );
 void clock_1s(void);
 void valve_manager(void);
 void e_valve (uint8_t valve_number, bool state);
+void usb_connection(void);
 struct clock_time
 {
 	uint8_t hour;
 	uint8_t minute;
 	uint8_t second;
-}sys_time={.hour=14,.minute=20,.second=45},wth[2]; // wth : Wattering Time
+}sys_time={.hour=15,.minute=50,.second=59},wth[2]; // wth : Wattering Time
 
 bool valve_manager_flag = false;
 uint8_t turn = 1;
 int test;
+bool usb_new = false;
 
 struct task
 {
 	bool wattering;
 	bool lighting;
 }today_task;
+
 int main (void)
 {
 	board_init();
@@ -37,35 +41,8 @@ int main (void)
 	{
 		
 		valve_manager();
-		
-		if (!ioport_get_pin_level(BUTTON_0))
-		{
-			e_valve(2,OPEN);
-			ioport_set_pin_level(LED_BLUE,LOW);
-			delay_ms(3);
-			while(!ioport_get_pin_level(BUTTON_0));
-			e_valve(2,CLOSE);
-			ioport_set_pin_level(LED_BLUE,HIGH);
-		}
-		if (!ioport_get_pin_level(BUTTON_1))
-		{
-			sys_time.minute++;
-			while(!ioport_get_pin_level(BUTTON_1));
-		}
-		
-		if (USB_INTFLAGSASET == 132)
-		{
-			char usb_out [100];
-			uint8_t count = sprintf(usb_out, "TIME : %d:%d:%d    %d  %d  %d   times of wattering: %d \r",sys_time.hour,sys_time.minute,sys_time.second,RTC.CNT,turn,valve_manager_flag,test);
-			for (int i=0;i<count;i++)
-			{
-				udi_cdc_putc(usb_out[i]);
-			}
-		}
-		else
-		{
-			delay_us(2);
-		}
+		delay_ms(20);
+		usb_connection();
 	}
 }
 
@@ -102,8 +79,10 @@ void wireless_connection ( void )
 }
 
 
+
 void valve_manager (void)
 {
+	
 	if(sys_time.hour == 0 && sys_time.minute == 0) 
 	{
 		today_task.lighting = false;
@@ -118,19 +97,31 @@ void valve_manager (void)
 		test ++;
 	}
 	
-	if((sys_time.hour == wth[turn].hour) && (sys_time.minute == wth[turn].minute + WATTERING_DURATION) && valve_manager_flag)
+	if((sys_time.hour >= wth[turn].hour) && (sys_time.minute >= wth[turn].minute + WATTERING_DURATION) && valve_manager_flag)
 	{
 		e_valve(2,CLOSE);
 		turn ++ ;
 		valve_manager_flag = false;
 	}
+	
+	// Manual wattering
+	if (!ioport_get_pin_level(BUTTON_0))
+	{
+		e_valve(2,OPEN);
+		ioport_set_pin_level(LED_BLUE,LOW);
+		delay_ms(3);
+		while(!ioport_get_pin_level(BUTTON_0));
+		e_valve(2,CLOSE);
+		ioport_set_pin_level(LED_BLUE,HIGH);
+	}
+	
 }
 
 
 ISR(RTC_OVF_vect)
 {
  	sys_time.second ++;
-	 if(sys_time.second == 60)
+	 if(sys_time.second >= 60)
 	 {
 		 sys_time.second = 0;
 		 sys_time.minute ++;
@@ -145,6 +136,7 @@ ISR(RTC_OVF_vect)
 		 }
 	 }
 	ioport_toggle_pin_level(LED_GREEN);
+	usb_new = true;
 }
 
 void e_valve (uint8_t valve_number, bool state)
@@ -193,6 +185,21 @@ void e_valve (uint8_t valve_number, bool state)
 			default:
 			break;
 		}
+	}
+	
+}
+
+void usb_connection(void)
+{
+	if (udd_is_underflow_event() && usb_new)
+	{
+		char usb_out [100];
+		uint8_t count = sprintf(usb_out, "TIME : %d:%d:%d    %d  %d  %d   times of wattering: %d \r",sys_time.hour,sys_time.minute,sys_time.second,RTC.CNT,turn,valve_manager_flag,test);
+		for (int i=0;i<count;i++)
+		{
+			udi_cdc_putc(usb_out[i]);
+		}
+		usb_new = false;
 	}
 	
 }
