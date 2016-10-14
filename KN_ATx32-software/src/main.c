@@ -8,6 +8,7 @@
 #define WATTERING_DURATION 1
 #define OPEN  1
 #define CLOSE 0
+#define MAX_TIME 1
 void wireless_connection ( void );
 void clock_1s(void);
 void valve_manager(void);
@@ -18,29 +19,26 @@ struct clock_time
 	uint8_t hour;
 	uint8_t minute;
 	uint8_t second;
-}sys_time={.hour=15,.minute=50,.second=59},wth[2]; // wth : Wattering Time
+}sys_time={.hour=16,.minute=35,.second=55},wth[MAX_TIME]; // wth : Wattering Time
 
-bool valve_manager_flag = false;
-uint8_t turn = 1;
+bool valve_state[3] = {CLOSE};
+uint8_t turn = 0;
 int test;
 bool usb_new = false;
 
-struct task
-{
-	bool wattering;
-	bool lighting;
-}today_task;
 
 int main (void)
 {
 	board_init();
-	wth[0].hour = 9;  wth[1].hour = 15;
-	wth[0].minute = 0;wth[1].minute = 0;
+	wth[0].hour = 12;  //wth[1].hour = 15;
+	wth[0].minute = 0;//wth[1].minute = 0;
 	
 	while(1)
-	{
-		
-		valve_manager();
+	{		
+		if (turn < MAX_TIME)
+		{
+			valve_manager();
+		}
 		delay_ms(20);
 		usb_connection();
 	}
@@ -82,26 +80,21 @@ void wireless_connection ( void )
 
 void valve_manager (void)
 {
-	
 	if(sys_time.hour == 0 && sys_time.minute == 0) 
 	{
-		today_task.lighting = false;
 		turn = 0;
 	}
 	
-	if((sys_time.hour == wth[turn].hour) && (sys_time.minute == wth[turn].minute) && !valve_manager_flag) 
+	if((sys_time.hour == wth[turn].hour) && (sys_time.minute == wth[turn].minute) && !valve_state[2]) 
 	{
 		e_valve(2,OPEN);
-		today_task.wattering = true;
-		valve_manager_flag = true;
 		test ++;
 	}
 	
-	if((sys_time.hour >= wth[turn].hour) && (sys_time.minute >= wth[turn].minute + WATTERING_DURATION) && valve_manager_flag)
+	if((sys_time.hour == wth[turn].hour) && (sys_time.minute == (wth[turn].minute + WATTERING_DURATION)) && valve_state[2])
 	{
 		e_valve(2,CLOSE);
 		turn ++ ;
-		valve_manager_flag = false;
 	}
 	
 	// Manual wattering
@@ -149,14 +142,16 @@ void e_valve (uint8_t valve_number, bool state)
 			ioport_set_pin_high(DRIVER_ENA);
 			ioport_set_pin_high(DRIVER_IN1);
 			ioport_set_pin_low(DRIVER_IN2);
-			ioport_set_pin_level(LED_BLUE,LOW);
+			ioport_set_pin_low(LED_BLUE);
+			valve_state[1] = OPEN;
 			break;
 			
 			case 2:
 			ioport_set_pin_high(DRIVER_ENB);
 			ioport_set_pin_high(DRIVER_IN3);
 			ioport_set_pin_low(DRIVER_IN4);
-			ioport_set_pin_level(LED_BLUE,LOW);
+			ioport_set_pin_low(LED_BLUE);
+			valve_state[2] = OPEN;
 			break;
 			
 			default:
@@ -172,14 +167,16 @@ void e_valve (uint8_t valve_number, bool state)
 			ioport_set_pin_low(DRIVER_ENA);
 			ioport_set_pin_high(DRIVER_IN1);
 			ioport_set_pin_low(DRIVER_IN2);
-			ioport_set_pin_level(LED_BLUE,HIGH);
+			ioport_set_pin_high(LED_BLUE);
+			valve_state[1] = CLOSE;
 			break;
 			
 			case 2:
 			ioport_set_pin_low(DRIVER_ENB);
 			ioport_set_pin_high(DRIVER_IN3);
 			ioport_set_pin_low(DRIVER_IN4);
-			ioport_set_pin_level(LED_BLUE,HIGH);
+			ioport_set_pin_high(LED_BLUE);
+			valve_state[2] = CLOSE;
 			break;
 			
 			default:
@@ -194,7 +191,7 @@ void usb_connection(void)
 	if (udd_is_underflow_event() && usb_new)
 	{
 		char usb_out [100];
-		uint8_t count = sprintf(usb_out, "TIME : %d:%d:%d    %d  %d  %d   times of wattering: %d \r",sys_time.hour,sys_time.minute,sys_time.second,RTC.CNT,turn,valve_manager_flag,test);
+		uint8_t count = sprintf(usb_out, "TIME : %d:%d:%d    %d  %d   times of wattering: %d \r",sys_time.hour,sys_time.minute,sys_time.second,RTC.CNT,turn,test);
 		for (int i=0;i<count;i++)
 		{
 			udi_cdc_putc(usb_out[i]);
