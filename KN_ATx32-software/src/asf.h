@@ -74,8 +74,21 @@
 // From module: NVM - Non Volatile Memory
 #include <nvm.h>
 
+// From module: PMIC - Programmable Multi-level Interrupt Controller
+#include <pmic.h>
+
 // From module: Part identification macros
 #include <parts.h>
+
+// From module: RTC - Real Time Counter
+#include <rtc.h>
+
+// From module: SPI - Serial Peripheral Interface
+#include <spi.h>
+
+// From module: SPI - XMEGA implementation
+#include <spi_master.h>
+#include <spi_master.h>
 
 // From module: Sleep Controller driver
 #include <sleep.h>
@@ -100,5 +113,7 @@
 // From module: XMEGA compiler driver
 #include <compiler.h>
 #include <status_codes.h>
+
+#include "nrf24l01.h"
 
 #endif // ASF_H
