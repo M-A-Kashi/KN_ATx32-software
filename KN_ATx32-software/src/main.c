@@ -1,6 +1,6 @@
 /*
- * Support and FAQ: visit <a href="http://www.kn2c.ir">KN2C Robotic Team</a>
- */
+* Support and FAQ: visit <a href="http://www.kn2c.ir">KN2C Robotic Team</a>
+*/
 #include <asf.h>
 #include <stdio.h>
 #include <usb_device.h>
@@ -8,39 +8,74 @@
 #define WATTERING_DURATION 1
 #define OPEN  1
 #define CLOSE 0
-#define MAX_TIME 1
-void wireless_connection ( void );
-void clock_1s(void);
-void valve_manager(void);
-void e_valve (uint8_t valve_number, bool state);
-void usb_connection(void);
-struct clock_time
+#define WATERING_TIMES 1
+
+typedef struct
 {
 	uint8_t hour;
 	uint8_t minute;
 	uint8_t second;
-}sys_time={.hour=16,.minute=35,.second=55},wth[MAX_TIME]; // wth : Wattering Time
+}clockTime;
 
-bool valve_state[3] = {CLOSE};
-uint8_t turn = 0;
-int test;
-bool usb_new = false;
+typedef struct {
+	clockTime openTime;
+	clockTime closeTime;
+	uint8_t frequency;
+	uint8_t valveNumber;
+}watterSchedule;
 
+typedef struct {
+	uint8_t id;
+	uint8_t commandReg;
+	clockTime sytemTime;
+	watterSchedule ws[3];
+}wirelessPackage;
+
+
+
+void wireless_connection ( void );
+void valve_manager(void);
+void e_valve (uint8_t valve_number, bool state);
+void usb_connection(void);
+bool timeEqualityCheck(clockTime time1, clockTime time2, bool secondCheck);
+watterSchedule watterScheduleCheck(watterSchedule ws);
+
+
+clockTime sys_time={.hour=10,.minute=47,.second=58};
+watterSchedule ws[WATERING_TIMES];
+
+bool valveState[3] = {CLOSE};
+bool newSecond = false;
 
 int main (void)
 {
 	board_init();
-	wth[0].hour = 12;  //wth[1].hour = 15;
-	wth[0].minute = 0;//wth[1].minute = 0;
+	ws[0].openTime.hour = 10;
+	ws[0].openTime.minute = 47;
+	ws[0].openTime.second = 0;
+	ws[0].closeTime.hour   = ws[0].openTime.hour ;
+	ws[0].closeTime.minute = ws[0].openTime.minute + WATTERING_DURATION;
+	ws[0].closeTime.second = ws[0].openTime.second ;
+	ws[0].frequency = 0;
+	ws[0].valveNumber = 2;
+	
+// 	ws[1].openTime.hour = 12;
+// 	ws[1].openTime.minute = 2;
+// 	ws[1].openTime.second = 15;
+// 	ws[1].closeTime.hour = 12;
+// 	ws[1].closeTime.minute = 2 + WATTERING_DURATION;
+// 	ws[1].closeTime.second = 15;
+// 	ws[1].frequency = 0;
+// 	ws[1].valveNumber = 2;
 	
 	while(1)
-	{		
-		if (turn < MAX_TIME)
-		{
-			valve_manager();
-		}
+	{
 		delay_ms(20);
-		usb_connection();
+		if (newSecond)
+		{
+			usb_connection();
+			newSecond = false;
+		}
 	}
 }
 
@@ -62,6 +97,7 @@ void wireless_connection ( void )
 		NRF24L01_Read_RX_Buf(spi_rx_buf, _Buffer_Size);
 		if(spi_rx_buf[0] == MODULE_ID )
 		{
+			
 			spi_rx_buf[0]=0;
 			spi_rx_buf[1]=rtc_get_time();
 			ioport_set_pin_level(LED_BLUE,LOW);
@@ -80,32 +116,18 @@ void wireless_connection ( void )
 
 void valve_manager (void)
 {
-	if(sys_time.hour == 0 && sys_time.minute == 0) 
+	for (int i = 0; i < WATERING_TIMES; i++)
 	{
-		turn = 0;
-	}
-	
-	if((sys_time.hour == wth[turn].hour) && (sys_time.minute == wth[turn].minute) && !valve_state[2]) 
-	{
-		e_valve(2,OPEN);
-		test ++;
-	}
-	
-	if((sys_time.hour == wth[turn].hour) && (sys_time.minute == (wth[turn].minute + WATTERING_DURATION)) && valve_state[2])
-	{
-		e_valve(2,CLOSE);
-		turn ++ ;
+		ws[i] = watterScheduleCheck(ws[i]);
 	}
 	
 	// Manual wattering
 	if (!ioport_get_pin_level(BUTTON_0))
 	{
 		e_valve(2,OPEN);
-		ioport_set_pin_level(LED_BLUE,LOW);
 		delay_ms(3);
 		while(!ioport_get_pin_level(BUTTON_0));
 		e_valve(2,CLOSE);
-		ioport_set_pin_level(LED_BLUE,HIGH);
 	}
 	
 }
@@ -113,23 +135,25 @@ void valve_manager (void)
 
 ISR(RTC_OVF_vect)
 {
- 	sys_time.second ++;
-	 if(sys_time.second >= 60)
-	 {
-		 sys_time.second = 0;
-		 sys_time.minute ++;
-		 if (sys_time.minute == 60)
-		 {
-			 sys_time.minute = 0;
-			 sys_time.hour ++;
-			 if (sys_time.hour == 24)
-			 {
-				 sys_time.hour = 0;
-			 }
-		 }
-	 }
+	sys_time.second ++;
+	if(sys_time.second >= 60)
+	{
+		sys_time.second = 0;
+		sys_time.minute ++;
+		if (sys_time.minute == 60)
+		{
+			sys_time.minute = 0;
+			sys_time.hour ++;
+			if (sys_time.hour == 24)
+			{
+				sys_time.hour = 0;
+			}
+		}
+	}
 	ioport_toggle_pin_level(LED_GREEN);
-	usb_new = true;
+	newSecond = true;
+	valve_manager();
+	wdt_reset(); 
 }
 
 void e_valve (uint8_t valve_number, bool state)
@@ -143,7 +167,7 @@ void e_valve (uint8_t valve_number, bool state)
 			ioport_set_pin_high(DRIVER_IN1);
 			ioport_set_pin_low(DRIVER_IN2);
 			ioport_set_pin_low(LED_BLUE);
-			valve_state[1] = OPEN;
+			valveState[1] = OPEN;
 			break;
 			
 			case 2:
@@ -151,7 +175,7 @@ void e_valve (uint8_t valve_number, bool state)
 			ioport_set_pin_high(DRIVER_IN3);
 			ioport_set_pin_low(DRIVER_IN4);
 			ioport_set_pin_low(LED_BLUE);
-			valve_state[2] = OPEN;
+			valveState[2] = OPEN;
 			break;
 			
 			default:
@@ -168,7 +192,7 @@ void e_valve (uint8_t valve_number, bool state)
 			ioport_set_pin_high(DRIVER_IN1);
 			ioport_set_pin_low(DRIVER_IN2);
 			ioport_set_pin_high(LED_BLUE);
-			valve_state[1] = CLOSE;
+			valveState[1] = CLOSE;
 			break;
 			
 			case 2:
@@ -176,7 +200,7 @@ void e_valve (uint8_t valve_number, bool state)
 			ioport_set_pin_high(DRIVER_IN3);
 			ioport_set_pin_low(DRIVER_IN4);
 			ioport_set_pin_high(LED_BLUE);
-			valve_state[2] = CLOSE;
+			valveState[2] = CLOSE;
 			break;
 			
 			default:
@@ -188,15 +212,50 @@ void e_valve (uint8_t valve_number, bool state)
 
 void usb_connection(void)
 {
-	if (udd_is_underflow_event() && usb_new)
+	if (udd_is_underflow_event())
 	{
 		char usb_out [100];
-		uint8_t count = sprintf(usb_out, "TIME : %d:%d:%d    %d  %d   times of wattering: %d \r",sys_time.hour,sys_time.minute,sys_time.second,RTC.CNT,turn,test);
+		uint8_t count = sprintf(usb_out, "Time : %d:%d:%d \r",sys_time.hour,sys_time.minute,sys_time.second);
 		for (int i=0;i<count;i++)
 		{
 			udi_cdc_putc(usb_out[i]);
 		}
-		usb_new = false;
+		for(int j = 0; j < WATERING_TIMES; j++){
+			count = sprintf(usb_out, "     WatterSchedule%d => Frequency: %d || Time : %d:%d:%d \r", j, ws[j].frequency, ws[j].openTime.hour, ws[j].openTime.minute, ws[j].openTime.second);
+			for (int i=0;i<count;i++)
+			{
+				udi_cdc_putc(usb_out[i]);
+			}
+		}
 	}
 	
+}
+
+bool timeEqualityCheck(clockTime time1, clockTime time2, bool secondCheck){
+	if (time1.hour != time2.hour)
+	{
+		return false;
+	}
+	if (time1.minute != time2.minute)
+	{
+		return false;
+	}
+	if (time1.second != time2.second && secondCheck)
+	{
+		return false;
+	}
+	return true;
+}
+
+watterSchedule watterScheduleCheck(watterSchedule ws){
+	if (timeEqualityCheck(sys_time, ws.openTime, false)){
+		e_valve(ws.valveNumber,OPEN);
+	}
+	if(timeEqualityCheck(sys_time, ws.closeTime, false)){
+		e_valve(ws.valveNumber,CLOSE);
+	}
+	if(timeEqualityCheck(sys_time, ws.closeTime, true)){
+		ws.frequency++;
+	}
+	return ws;
 }

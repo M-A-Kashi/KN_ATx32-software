@@ -110,10 +110,11 @@
 #include <udc.h>
 #include <udd.h>
 
+// From module: WDT - Watchdog Timer
+#include <wdt.h>
+
 // From module: XMEGA compiler driver
 #include <compiler.h>
 #include <status_codes.h>
-
 #include "nrf24l01.h"
-
 #endif // ASF_H

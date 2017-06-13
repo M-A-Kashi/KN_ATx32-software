@@ -16,6 +16,7 @@ void spi_init_pins(void);
 void spi_init_module(void);
 void nrf_init (void);
 void module_id_set(void);
+void watchDogInit();
 char Address[_Address_Width] = { 0x11, 0x22, 0x33, 0x44, 0x55};
 
 
@@ -112,4 +113,9 @@ void nrf_init (void)
 void module_id_set(void)
 {
 	Address[4] = (MODULE_ID << 4 ) | MODULE_ID ;
+}
+
+void watchDogInit(){
+	wdt_set_timeout_period(WDT_TIMEOUT_PERIOD_8KCLK);
+	wdt_enable();
 }
