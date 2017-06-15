@@ -14,10 +14,7 @@
 void force_boot_loader(void);
 void spi_init_pins(void);
 void spi_init_module(void);
-void nrf_init (void);
-void module_id_set(void);
-void watchDogInit();
-char Address[_Address_Width] = { 0x11, 0x22, 0x33, 0x44, 0x55};
+void watchDogInit(void);
 
 
 void board_init(void)
@@ -44,7 +41,7 @@ void board_init(void)
 	ioport_configure_pin(DRIVER_ENB, IOPORT_DIR_OUTPUT | IOPORT_INIT_LOW);
 	spi_init_pins();
 	// Boot-loader setting
-	force_boot_loader();
+	//force_boot_loader();
 	// RTC setting
 	// Instead of configuring conf_clock. h use these settings to avoid corrupting USB settings
 	uint8_t id = SYSCLK_RTCSRC_RCOSC;
@@ -60,8 +57,7 @@ void board_init(void)
 	udc_start();
 	//SPI settings
 	spi_init_module();
-	module_id_set();
-	nrf_init();
+	watchDogInit();
 }
 
 void force_boot_loader(void)
@@ -94,28 +90,9 @@ void spi_init_module(void)
 	spi_enable(&SPIC);
 }
 
-void nrf_init (void)
-{
 
-	delay_ms(11);
-	NRF24L01_Clear_Interrupts();
-	NRF24L01_Flush_TX();
-	NRF24L01_Flush_RX();
-	NRF24L01_Init_milad(_RX_MODE, _CH_1, _2Mbps, Address, _Address_Width, _Buffer_Size, RF_PWR_MAX);
-	NRF24L01_WriteReg(W_REGISTER | EN_AA, 0x01);
-	NRF24L01_WriteReg(W_REGISTER | DYNPD,0x01);
-	NRF24L01_WriteReg(W_REGISTER | FEATURE,0x06);
-
-	NRF24L01_CE_HIGH;//rx mode  ?
-	delay_us(130);
-}
-
-void module_id_set(void)
-{
-	Address[4] = (MODULE_ID << 4 ) | MODULE_ID ;
-}
 
 void watchDogInit(){
-	wdt_set_timeout_period(WDT_TIMEOUT_PERIOD_8KCLK);
+	wdt_set_timeout_period(WDT_TIMEOUT_PERIOD_4KCLK);
 	wdt_enable();
 }

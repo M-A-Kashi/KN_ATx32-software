@@ -4,54 +4,26 @@
 #include <asf.h>
 #include <stdio.h>
 #include <usb_device.h>
-
-#define WATTERING_DURATION 1
-#define OPEN  1
-#define CLOSE 0
-#define WATERING_TIMES 1
-
-typedef struct
-{
-	uint8_t hour;
-	uint8_t minute;
-	uint8_t second;
-}clockTime;
-
-typedef struct {
-	clockTime openTime;
-	clockTime closeTime;
-	uint8_t frequency;
-	uint8_t valveNumber;
-}watterSchedule;
-
-typedef struct {
-	uint8_t id;
-	uint8_t commandReg;
-	clockTime sytemTime;
-	watterSchedule ws[3];
-}wirelessPackage;
-
-
+#include "WatteringLib.h"
 
 void wireless_connection ( void );
-void valve_manager(void);
-void e_valve (uint8_t valve_number, bool state);
 void usb_connection(void);
-bool timeEqualityCheck(clockTime time1, clockTime time2, bool secondCheck);
-watterSchedule watterScheduleCheck(watterSchedule ws);
 
-
-clockTime sys_time={.hour=10,.minute=47,.second=58};
+enum RF_MODE {RX_MODE, TX_MODE}rfMode;
+clockTime sys_time={.hour=19,.minute=0,.second=0};
 watterSchedule ws[WATERING_TIMES];
 
-bool valveState[3] = {CLOSE};
 bool newSecond = false;
 
+uint8_t statusRF;
+char Address[_Address_Width] = { 0x11, 0x22, 0x33, 0x44, 0x55};
+char spi_rx_buf[_Buffer_Size] ;
+char spi_tx_buf[_Buffer_Size] ;	
 int main (void)
 {
 	board_init();
-	ws[0].openTime.hour = 10;
-	ws[0].openTime.minute = 47;
+	ws[0].openTime.hour = 7;
+	ws[0].openTime.minute = 0;
 	ws[0].openTime.second = 0;
 	ws[0].closeTime.hour   = ws[0].openTime.hour ;
 	ws[0].closeTime.minute = ws[0].openTime.minute + WATTERING_DURATION;
@@ -59,18 +31,19 @@ int main (void)
 	ws[0].frequency = 0;
 	ws[0].valveNumber = 2;
 	
-// 	ws[1].openTime.hour = 12;
-// 	ws[1].openTime.minute = 2;
-// 	ws[1].openTime.second = 15;
-// 	ws[1].closeTime.hour = 12;
-// 	ws[1].closeTime.minute = 2 + WATTERING_DURATION;
-// 	ws[1].closeTime.second = 15;
-// 	ws[1].frequency = 0;
-// 	ws[1].valveNumber = 2;
+	ws[1].openTime.hour = 13;
+	ws[1].openTime.minute = 0;
+	ws[1].openTime.second = 0;
+	ws[1].closeTime.hour = ws[1].openTime.hour;
+	ws[1].closeTime.minute = ws[1].openTime.minute + WATTERING_DURATION;
+	ws[1].closeTime.second = ws[1].openTime.second;
+	ws[1].frequency = 0;
+	ws[1].valveNumber = 2;
 	
 	while(1)
 	{
 		delay_ms(20);
+		manualWattering();
 		if (newSecond)
 		{
 			usb_connection();
@@ -85,52 +58,12 @@ ISR(PORTC_INT0_vect)//PRX   IRQ Interrupt Pin
 	wireless_connection();
 }
 
-char spi_rx_buf[_Buffer_Size] ;
 void wireless_connection ( void )
 {
-	uint8_t status = NRF24L01_WriteReg(W_REGISTER | STATUSe, _TX_DS|_MAX_RT|_RX_DR);
-	if((status & _RX_DR) == _RX_DR)
-	{
-		ioport_set_pin_level(LED_WHITE,LOW);
 
-		//wdt_reset();
-		NRF24L01_Read_RX_Buf(spi_rx_buf, _Buffer_Size);
-		if(spi_rx_buf[0] == MODULE_ID )
-		{
-			
-			spi_rx_buf[0]=0;
-			spi_rx_buf[1]=rtc_get_time();
-			ioport_set_pin_level(LED_BLUE,LOW);
-			NRF24L01_Write_TX_Buf(spi_rx_buf, _Buffer_Size);
-			//signal_strength++;
-		}
-	}
-	
-	if ((status&_MAX_RT) == _MAX_RT)
-	{
-		NRF24L01_Flush_TX();
-	}
 }
 
 
-
-void valve_manager (void)
-{
-	for (int i = 0; i < WATERING_TIMES; i++)
-	{
-		ws[i] = watterScheduleCheck(ws[i]);
-	}
-	
-	// Manual wattering
-	if (!ioport_get_pin_level(BUTTON_0))
-	{
-		e_valve(2,OPEN);
-		delay_ms(3);
-		while(!ioport_get_pin_level(BUTTON_0));
-		e_valve(2,CLOSE);
-	}
-	
-}
 
 
 ISR(RTC_OVF_vect)
@@ -152,62 +85,8 @@ ISR(RTC_OVF_vect)
 	}
 	ioport_toggle_pin_level(LED_GREEN);
 	newSecond = true;
-	valve_manager();
+	valve_manager(sys_time,ws);
 	wdt_reset(); 
-}
-
-void e_valve (uint8_t valve_number, bool state)
-{
-	if (state == OPEN)
-	{
-		switch (valve_number)
-		{
-			case 1:
-			ioport_set_pin_high(DRIVER_ENA);
-			ioport_set_pin_high(DRIVER_IN1);
-			ioport_set_pin_low(DRIVER_IN2);
-			ioport_set_pin_low(LED_BLUE);
-			valveState[1] = OPEN;
-			break;
-			
-			case 2:
-			ioport_set_pin_high(DRIVER_ENB);
-			ioport_set_pin_high(DRIVER_IN3);
-			ioport_set_pin_low(DRIVER_IN4);
-			ioport_set_pin_low(LED_BLUE);
-			valveState[2] = OPEN;
-			break;
-			
-			default:
-			break;
-		}
-	}
-	
-	if (state == CLOSE)
-	{
-		switch (valve_number)
-		{
-			case 1:
-			ioport_set_pin_low(DRIVER_ENA);
-			ioport_set_pin_high(DRIVER_IN1);
-			ioport_set_pin_low(DRIVER_IN2);
-			ioport_set_pin_high(LED_BLUE);
-			valveState[1] = CLOSE;
-			break;
-			
-			case 2:
-			ioport_set_pin_low(DRIVER_ENB);
-			ioport_set_pin_high(DRIVER_IN3);
-			ioport_set_pin_low(DRIVER_IN4);
-			ioport_set_pin_high(LED_BLUE);
-			valveState[2] = CLOSE;
-			break;
-			
-			default:
-			break;
-		}
-	}
-	
 }
 
 void usb_connection(void)
@@ -228,34 +107,4 @@ void usb_connection(void)
 			}
 		}
 	}
-	
-}
-
-bool timeEqualityCheck(clockTime time1, clockTime time2, bool secondCheck){
-	if (time1.hour != time2.hour)
-	{
-		return false;
-	}
-	if (time1.minute != time2.minute)
-	{
-		return false;
-	}
-	if (time1.second != time2.second && secondCheck)
-	{
-		return false;
-	}
-	return true;
-}
-
-watterSchedule watterScheduleCheck(watterSchedule ws){
-	if (timeEqualityCheck(sys_time, ws.openTime, false)){
-		e_valve(ws.valveNumber,OPEN);
-	}
-	if(timeEqualityCheck(sys_time, ws.closeTime, false)){
-		e_valve(ws.valveNumber,CLOSE);
-	}
-	if(timeEqualityCheck(sys_time, ws.closeTime, true)){
-		ws.frequency++;
-	}
-	return ws;
 }
