@@ -8,10 +8,10 @@
 #include "WatteringLib.h"
 
 watterSchedule watterScheduleCheck(clockTime sys_time, watterSchedule ws){
-	if (timeEqualityCheck(sys_time, ws.openTime, false)){
+	if (timeEqualityCheck(sys_time, ws.openTime, true)){
 		e_valve(ws.valveNumber,OPEN);
 	}
-	if(timeEqualityCheck(sys_time, ws.closeTime, false)){
+	if(timeEqualityCheck(sys_time, ws.closeTime, true)){
 		e_valve(ws.valveNumber,CLOSE);
 	}
 	if(timeEqualityCheck(sys_time, ws.closeTime, true)){
