@@ -89,6 +89,10 @@ void manualWattering(void){
 }
 
 bool timeEqualityCheck(clockTime time1, clockTime time2, bool secondCheck){
+	if (time1.day != time2.day)
+	{
+		return false;
+	}
 	if (time1.hour != time2.hour)
 	{
 		return false;
