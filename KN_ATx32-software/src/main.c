@@ -10,7 +10,7 @@ void wireless_connection ( void );
 void usb_connection(void);
 
 enum RF_MODE {RX_MODE, TX_MODE}rfMode;
-clockTime sys_time={.hour=14,.minute=15,.second=55};
+clockTime sys_time={.hour=9,.minute=20,.second=55};
 watterSchedule ws[WATERING_TIMES];
 
 bool newSecond = false;
@@ -31,14 +31,14 @@ int main (void)
 	ws[0].frequency = 0;
 	ws[0].valveNumber = 2;
 	
-	ws[1].openTime.hour = 21;
-	ws[1].openTime.minute = 0;
-	ws[1].openTime.second = 0;
-	ws[1].closeTime.hour = ws[1].openTime.hour;
-	ws[1].closeTime.minute = ws[1].openTime.minute;
-	ws[1].closeTime.second = ws[1].openTime.second + WATTERING_DURATION;
-	ws[1].frequency = 0;
-	ws[1].valveNumber = 2;
+// 	ws[1].openTime.hour = 21;
+// 	ws[1].openTime.minute = 0;
+// 	ws[1].openTime.second = 0;
+// 	ws[1].closeTime.hour = ws[1].openTime.hour;
+// 	ws[1].closeTime.minute = ws[1].openTime.minute;
+// 	ws[1].closeTime.second = ws[1].openTime.second + WATTERING_DURATION;
+// 	ws[1].frequency = 0;
+// 	ws[1].valveNumber = 2;
 	
 	while(1)
 	{

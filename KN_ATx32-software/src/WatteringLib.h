@@ -13,8 +13,8 @@
 
 #define OPEN  1
 #define CLOSE 0
-#define WATTERING_DURATION 30
-#define WATERING_TIMES 2
+#define WATTERING_DURATION 20
+#define WATERING_TIMES 1
 
 typedef struct
 {
