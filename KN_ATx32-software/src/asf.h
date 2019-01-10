@@ -52,6 +52,9 @@
  * running the ASF driver selector tool. Any changes will be discarded.
  */
 
+// From module: ADC - XMEGA A/AU Implementation
+#include <adc.h>
+
 // From module: CPU specific features
 #include <ccp.h>
 #include <xmega_reset_cause.h>
@@ -113,8 +116,9 @@
 // From module: WDT - Watchdog Timer
 #include <wdt.h>
 
+#include "nrf24l01.h"
 // From module: XMEGA compiler driver
 #include <compiler.h>
 #include <status_codes.h>
-#include "nrf24l01.h"
+
 #endif // ASF_H
