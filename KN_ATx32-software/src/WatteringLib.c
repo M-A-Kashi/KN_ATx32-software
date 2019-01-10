@@ -104,3 +104,15 @@ bool timeEqualityCheck(clockTime time1, clockTime time2, bool secondCheck){
 	return true;
 }
 
+
+void updateTemperature(void){
+	adc_start_conversion(&LM35_ADC, LM35_ADC_CH);
+	adc_wait_for_interrupt_flag(&LM35_ADC, LM35_ADC_CH);
+	temperature = (adc_get_result(&LM35_ADC, LM35_ADC_CH)*100/2048 - temperature)*0.1 + temperature;
+}
+
+float getTemperature(void){
+	return temperature;
+}
+	
+

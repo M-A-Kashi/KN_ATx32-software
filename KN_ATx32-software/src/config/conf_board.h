@@ -54,6 +54,10 @@
 #define PR0				IOPORT_CREATE_PIN(PORTR, 0)
 #define PR1				IOPORT_CREATE_PIN(PORTR, 1)
 
+//ADC
+#define LM35_ADC    ADCA
+#define LM35_ADC_CH ADC_CH0
+
 //Peripherals
 #define NRF24L01_SPI        SPIC
 

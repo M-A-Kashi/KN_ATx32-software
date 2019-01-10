@@ -11,10 +11,12 @@
 #include <asf.h>
 #include <board.h>
 #include <conf_board.h>
+
 void force_boot_loader(void);
 void spi_init_pins(void);
 void spi_init_module(void);
 void watchDogInit(void);
+void adc_init(void);
 
 
 void board_init(void)
@@ -26,6 +28,7 @@ void board_init(void)
 	// Initializes GPIO
 	ioport_init();
 	
+	adc_init();
 	
 	ioport_configure_pin(LED_BLUE, IOPORT_DIR_OUTPUT | IOPORT_INIT_HIGH);
 	ioport_configure_pin(LED_GREEN, IOPORT_DIR_OUTPUT | IOPORT_INIT_HIGH);
@@ -39,6 +42,9 @@ void board_init(void)
 	ioport_configure_pin(DRIVER_IN4, IOPORT_DIR_OUTPUT | IOPORT_INIT_LOW);
 	ioport_configure_pin(DRIVER_ENA, IOPORT_DIR_OUTPUT | IOPORT_INIT_LOW);
 	ioport_configure_pin(DRIVER_ENB, IOPORT_DIR_OUTPUT | IOPORT_INIT_LOW);
+	
+	//Temperature sensor
+	ioport_configure_pin(PA5, IOPORT_PULL_DOWN);
 	spi_init_pins();
 	// Boot-loader setting
 	//force_boot_loader();
@@ -95,4 +101,19 @@ void spi_init_module(void)
 void watchDogInit(){
 	wdt_set_timeout_period(WDT_TIMEOUT_PERIOD_4KCLK);
 	wdt_enable();
+}
+
+void adc_init(void)
+{
+	struct adc_config adc_conf;
+	struct adc_channel_config adcch_conf;
+	adc_read_configuration(&LM35_ADC, &adc_conf);
+	adcch_read_configuration(&LM35_ADC, LM35_ADC_CH, &adcch_conf);
+	adc_set_conversion_parameters(&adc_conf, ADC_SIGN_ON, ADC_RES_12, ADC_REF_BANDGAP);
+	adc_set_conversion_trigger(&adc_conf, ADC_TRIG_MANUAL, 1, 0);
+	adc_set_clock_rate(&adc_conf, 200000UL);
+	adcch_set_input(&adcch_conf, ADCCH_POS_PIN5, ADCCH_NEG_PAD_GND, 1);
+	adc_write_configuration(&LM35_ADC, &adc_conf);
+	adcch_write_configuration(&LM35_ADC, LM35_ADC_CH, &adcch_conf);
+	adc_enable(&LM35_ADC);
 }

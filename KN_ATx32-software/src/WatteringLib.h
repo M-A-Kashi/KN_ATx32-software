@@ -42,6 +42,8 @@ void e_valve (uint8_t valve_number, bool state);
 void valve_manager (clockTime sys_time, watterSchedule * ws);
 void manualWattering(void);
 bool timeEqualityCheck(clockTime time1, clockTime time2, bool secondCheck);
+void updateTemperature(void);
+float getTemperature(void);
 
 
 #endif /* WATTERINGLIB_H_ */
