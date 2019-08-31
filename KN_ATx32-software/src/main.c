@@ -5,13 +5,12 @@
 #include <stdio.h>
 #include <usb_device.h>
 #include "WatteringLib.h"
-
 void wireless_connection ( void );
 void usb_connection(void);
 
 enum RF_MODE {RX_MODE, TX_MODE}rfMode;
-clockTime sys_time={.hour=9,.minute=20,.second=55};
-watterSchedule ws[WATERING_TIMES];
+clockTime sys_time={.hour=8,.minute=59,.second=55,.day=5};
+
 
 bool newSecond = false;
 
@@ -22,24 +21,7 @@ char spi_tx_buf[_Buffer_Size] ;
 int main (void)
 {
 	board_init();
-	ws[0].openTime.hour = 9;
-	ws[0].openTime.minute = 0;
-	ws[0].openTime.second = 0;
-	ws[0].closeTime.hour   = ws[0].openTime.hour ;
-	ws[0].closeTime.minute = ws[0].openTime.minute ;
-	ws[0].closeTime.second = ws[0].openTime.second +WATTERING_DURATION;
-	ws[0].frequency = 0;
-	ws[0].valveNumber = 2;
-	
-// 	ws[1].openTime.hour = 21;
-// 	ws[1].openTime.minute = 0;
-// 	ws[1].openTime.second = 0;
-// 	ws[1].closeTime.hour = ws[1].openTime.hour;
-// 	ws[1].closeTime.minute = ws[1].openTime.minute;
-// 	ws[1].closeTime.second = ws[1].openTime.second + WATTERING_DURATION;
-// 	ws[1].frequency = 0;
-// 	ws[1].valveNumber = 2;
-	
+
 	while(1)
 	{
 		delay_ms(20);
@@ -80,31 +62,55 @@ ISR(RTC_OVF_vect)
 			if (sys_time.hour == 24)
 			{
 				sys_time.hour = 0;
+				sys_time.day ++;
+				if (sys_time.day == 7)
+				{
+					sys_time.day = 0;
+				}
 			}
 		}
 	}
 	ioport_toggle_pin_level(LED_GREEN);
 	newSecond = true;
-	valve_manager(sys_time,ws);
+	updateTemperature();
+	valve_manager(sys_time);
 	wdt_reset(); 
 }
 
 void usb_connection(void)
 {
+	int temp = getTemperature()*10;
 	if (udd_is_underflow_event())
 	{
 		char usb_out [100];
-		uint8_t count = sprintf(usb_out, "Time : %d:%d:%d \r",sys_time.hour,sys_time.minute,sys_time.second);
+		uint8_t count = sprintf(usb_out, "Time : %d:%d:%d || temp : %d \r",sys_time.hour,sys_time.minute,sys_time.second, temp);
 		for (int i=0;i<count;i++)
 		{
 			udi_cdc_putc(usb_out[i]);
 		}
-		for(int j = 0; j < WATERING_TIMES; j++){
-			count = sprintf(usb_out, "     WatterSchedule%d => Frequency: %d || Time : %d:%d:%d \r", j, ws[j].frequency, ws[j].openTime.hour, ws[j].openTime.minute, ws[j].openTime.second);
-			for (int i=0;i<count;i++)
-			{
-				udi_cdc_putc(usb_out[i]);
-			}
+
+		count = sprintf(usb_out, "     HOT1      => Frequency: %d || Time : %d:%d:%d \r", wsHot[0].frequency, wsHot[0].openTime.hour, wsHot[0].openTime.minute, wsHot[0].openTime.second);
+		for (int i=0;i<count;i++)
+		{
+			udi_cdc_putc(usb_out[i]);
+		}
+		
+		count = sprintf(usb_out, "     HOT2      => Frequency: %d || Time : %d:%d:%d \r", wsHot[1].frequency, wsHot[1].openTime.hour, wsHot[1].openTime.minute, wsHot[1].openTime.second);
+		for (int i=0;i<count;i++)
+		{
+			udi_cdc_putc(usb_out[i]);
+		}
+		
+		count = sprintf(usb_out, "     Temperate => Frequency: %d || Time : %d:%d:%d \r", wsTemperate[0].frequency, wsTemperate[0].openTime.hour, wsTemperate[0].openTime.minute, wsTemperate[0].openTime.second);
+		for (int i=0;i<count;i++)
+		{
+			udi_cdc_putc(usb_out[i]);
+		}
+		
+		count = sprintf(usb_out, "     Cold      => Frequency: %d || Time : %d:%d:%d \r", wsCold[0].frequency, wsCold[0].openTime.hour, wsCold[0].openTime.minute, wsCold[0].openTime.second);
+		for (int i=0;i<count;i++)
+		{
+			udi_cdc_putc(usb_out[i]);
 		}
 	}
 }

@@ -6,18 +6,68 @@
  */ 
 
 #include "WatteringLib.h"
+float temperature = 10;
+watterSchedule * nextCloseSchedule;
 
-watterSchedule watterScheduleCheck(clockTime sys_time, watterSchedule ws){
-	if (timeEqualityCheck(sys_time, ws.openTime, true)){
-		e_valve(ws.valveNumber,OPEN);
+watterSchedule wsHot[HOT_WATERING_TIMES] = {
+	{
+		.dayOfWeek={1,1,1,1,1,1,1},
+		.openTime.hour = 9,
+		.openTime.minute = 0,
+		.openTime.second = 0,
+		.closeTime.hour   = 9,
+		.closeTime.minute = 0 ,
+		.closeTime.second = 35,
+		.frequency = 0,
+		.valveNumber = 2
+	},
+	{
+		.dayOfWeek={1,1,1,1,1,1,1},
+		.openTime.hour = 21,
+		.openTime.minute = 0,
+		.openTime.second = 0,
+		.closeTime.hour   = 21,
+		.closeTime.minute = 0 ,
+		.closeTime.second = 35,
+		.frequency = 0,
+		.valveNumber = 2
 	}
-	if(timeEqualityCheck(sys_time, ws.closeTime, true)){
-		e_valve(ws.valveNumber,CLOSE);
+};
+
+watterSchedule wsTemperate[TEMPERATE_WATERING_TIMES] = {
+	{
+		.dayOfWeek={1,1,1,1,1,1,1},
+		.openTime.hour = 9,
+		.openTime.minute = 0,
+		.openTime.second = 0,
+		.closeTime.hour   = 9,
+		.closeTime.minute = 0 ,
+		.closeTime.second = 25,
+		.frequency = 0,
+		.valveNumber = 2
 	}
-	if(timeEqualityCheck(sys_time, ws.closeTime, true)){
-		ws.frequency++;
+};
+
+watterSchedule wsCold[COLD_WATERING_TIMES] = {
+	{
+		.dayOfWeek={1,0,0,1,0,0,0},
+		.openTime.hour = 9,
+		.openTime.minute = 0,
+		.openTime.second = 0,
+		.closeTime.hour   = 9,
+		.closeTime.minute = 0 ,
+		.closeTime.second = 25,
+		.frequency = 0,
+		.valveNumber = 2
 	}
-	return ws;
+};
+
+
+void watterScheduleCheck(clockTime sys_time, watterSchedule * ws){
+	if (timeEqualityCheck(sys_time, ws->openTime, true, ws->dayOfWeek)){
+		e_valve(ws->valveNumber,OPEN);
+		nextCloseSchedule = ws;
+	}
 }
 
 void e_valve (uint8_t valve_number, bool state)
@@ -70,12 +120,31 @@ void e_valve (uint8_t valve_number, bool state)
 	
 }
 
-void valve_manager (clockTime sys_time, watterSchedule * ws)
+void valve_manager (clockTime sys_time)
 {
-	for (int i = 0; i < WATERING_TIMES; i++)
-	{
-		ws[i] = watterScheduleCheck(sys_time, ws[i]);
-	}	
+	int temp = getTemperature();
+	
+	if (60 < temp || temp <= 4){
+		return ;
+	}else if (27 < temp && temp <= 60){
+		for (int i = 0; i < HOT_WATERING_TIMES; i++){
+		 	watterScheduleCheck(sys_time, &wsHot[i]);
+		}
+	}else if( 10 < temp && temp <= 27){
+		for (int i = 0; i < TEMPERATE_WATERING_TIMES; i++){
+			watterScheduleCheck(sys_time, &wsTemperate[i]);
+		}
+	}else if( 4 < temp && temp <= 10){
+		for (int i = 0; i < COLD_WATERING_TIMES; i++){
+			 watterScheduleCheck(sys_time, &wsCold[i]);
+		}
+	}
+	
+	if (timeEqualityCheck(sys_time, nextCloseSchedule->closeTime , true, nextCloseSchedule->dayOfWeek)){
+		e_valve(nextCloseSchedule->valveNumber,CLOSE);
+		nextCloseSchedule->frequency++;
+	}
+
 }
 
 void manualWattering(void){
@@ -88,16 +157,22 @@ void manualWattering(void){
 	}
 }
 
-bool timeEqualityCheck(clockTime time1, clockTime time2, bool secondCheck){
-	if (time1.hour != time2.hour)
+bool timeEqualityCheck(clockTime sys_time, clockTime wsTime, bool secondCheck,  bool * dayOfWeek ){
+	
+	if (!dayOfWeek[sys_time.day])
 	{
 		return false;
 	}
-	if (time1.minute != time2.minute)
+	
+	if (sys_time.hour != wsTime.hour)
 	{
 		return false;
 	}
-	if (time1.second != time2.second && secondCheck)
+	if (sys_time.minute != wsTime.minute)
+	{
+		return false;
+	}
+	if (sys_time.second != wsTime.second && secondCheck)
 	{
 		return false;
 	}
