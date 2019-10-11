@@ -7,6 +7,10 @@
 
 #include "WatteringLib.h"
 float temperature = 10;
+float lastMaxTemperature = 4;
+uint32_t secondsBetweenWatterings = 84600;
+uint32_t openTimer = 50400;//seconds till next wattering time
+uint16_t closeTimer = 0;
 watterSchedule * nextCloseSchedule;
 
 watterSchedule wsHot[HOT_WATERING_TIMES] = {
@@ -123,26 +127,26 @@ void e_valve (uint8_t valve_number, bool state)
 void valve_manager (clockTime sys_time)
 {
 	int temp = getTemperature();
-	
-	if (60 < temp || temp <= 4){
-		return ;
-	}else if (27 < temp && temp <= 60){
-		for (int i = 0; i < HOT_WATERING_TIMES; i++){
-		 	watterScheduleCheck(sys_time, &wsHot[i]);
-		}
-	}else if( 10 < temp && temp <= 27){
-		for (int i = 0; i < TEMPERATE_WATERING_TIMES; i++){
-			watterScheduleCheck(sys_time, &wsTemperate[i]);
-		}
-	}else if( 4 < temp && temp <= 10){
-		for (int i = 0; i < COLD_WATERING_TIMES; i++){
-			 watterScheduleCheck(sys_time, &wsCold[i]);
-		}
+	if (temp > lastMaxTemperature){
+		lastMaxTemperature = temp;
+	}
+
+	if (openTimer>=1){
+		openTimer--;
+	}
+
+	if (closeTimer>=1){
+		closeTimer--;
+	}
+
+	if ((60 > temp ) && (temp >= 4) && (openTimer==0)){
+		e_valve(2,OPEN);
+		closeTimer = 30;
+		openTimer = secondsBetweenWatterings;
 	}
 	
-	if (timeEqualityCheck(sys_time, nextCloseSchedule->closeTime , true, nextCloseSchedule->dayOfWeek)){
-		e_valve(nextCloseSchedule->valveNumber,CLOSE);
-		nextCloseSchedule->frequency++;
+	if (closeTimer==0){
+		e_valve(2,CLOSE);
 	}
 
 }
@@ -188,6 +192,12 @@ void updateTemperature(void){
 
 float getTemperature(void){
 	return temperature;
+}
+
+void resetMaxTemp(void){
+
+	secondsBetweenWatterings = (uint32_t)(3203616.1*pow(lastMaxTemperature, -1.3724));  
+	lastMaxTemperature = 4;
 }
 	
 

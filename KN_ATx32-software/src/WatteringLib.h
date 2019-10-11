@@ -10,6 +10,7 @@
 #define WATTERINGLIB_H_
 
 #include "asf.h"
+#include <math.h>
 
 #define OPEN  1
 #define CLOSE 0
@@ -45,6 +46,10 @@ watterSchedule wsHot[HOT_WATERING_TIMES];
 watterSchedule wsTemperate[TEMPERATE_WATERING_TIMES];
 watterSchedule wsCold[COLD_WATERING_TIMES];
 
+extern float lastMaxTemperature;
+extern uint32_t secondsBetweenWatterings;
+extern uint32_t openTimer;
+
 void watterScheduleCheck(clockTime sys_time, watterSchedule * ws);
 void e_valve (uint8_t valve_number, bool state);
 void valve_manager (clockTime sys_time);
@@ -52,6 +57,6 @@ void manualWattering(void);
 bool timeEqualityCheck(clockTime sys_time, clockTime wsTime, bool secondCheck,  bool * dayOfWeek );
 void updateTemperature(void);
 float getTemperature(void);
-
+void resetMaxTemp(void);
 
 #endif /* WATTERINGLIB_H_ */

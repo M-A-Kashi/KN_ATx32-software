@@ -9,7 +9,7 @@ void wireless_connection ( void );
 void usb_connection(void);
 
 enum RF_MODE {RX_MODE, TX_MODE}rfMode;
-clockTime sys_time={.hour=8,.minute=59,.second=55,.day=5};
+clockTime sys_time={.hour=19,.minute=30,.second=0,.day=5};
 
 
 bool newSecond = false;
@@ -61,6 +61,7 @@ ISR(RTC_OVF_vect)
 			sys_time.hour ++;
 			if (sys_time.hour == 24)
 			{
+				resetMaxTemp();
 				sys_time.hour = 0;
 				sys_time.day ++;
 				if (sys_time.day == 7)
@@ -82,32 +83,9 @@ void usb_connection(void)
 	int temp = getTemperature()*10;
 	if (udd_is_underflow_event())
 	{
-		char usb_out [100];
-		uint8_t count = sprintf(usb_out, "Time : %d:%d:%d || temp : %d \r",sys_time.hour,sys_time.minute,sys_time.second, temp);
-		for (int i=0;i<count;i++)
-		{
-			udi_cdc_putc(usb_out[i]);
-		}
-
-		count = sprintf(usb_out, "     HOT1      => Frequency: %d || Time : %d:%d:%d \r", wsHot[0].frequency, wsHot[0].openTime.hour, wsHot[0].openTime.minute, wsHot[0].openTime.second);
-		for (int i=0;i<count;i++)
-		{
-			udi_cdc_putc(usb_out[i]);
-		}
-		
-		count = sprintf(usb_out, "     HOT2      => Frequency: %d || Time : %d:%d:%d \r", wsHot[1].frequency, wsHot[1].openTime.hour, wsHot[1].openTime.minute, wsHot[1].openTime.second);
-		for (int i=0;i<count;i++)
-		{
-			udi_cdc_putc(usb_out[i]);
-		}
-		
-		count = sprintf(usb_out, "     Temperate => Frequency: %d || Time : %d:%d:%d \r", wsTemperate[0].frequency, wsTemperate[0].openTime.hour, wsTemperate[0].openTime.minute, wsTemperate[0].openTime.second);
-		for (int i=0;i<count;i++)
-		{
-			udi_cdc_putc(usb_out[i]);
-		}
-		
-		count = sprintf(usb_out, "     Cold      => Frequency: %d || Time : %d:%d:%d \r", wsCold[0].frequency, wsCold[0].openTime.hour, wsCold[0].openTime.minute, wsCold[0].openTime.second);
+		char usb_out [200];
+		uint8_t count = sprintf(usb_out, "Time : %d:%d:%d || temp : %d || secondsBetweenWatterings: %lu || ETA: %lu || last Max Temperature: %d\r",
+		sys_time.hour,sys_time.minute,sys_time.second, temp, secondsBetweenWatterings, openTimer, (int)lastMaxTemperature*10);
 		for (int i=0;i<count;i++)
 		{
 			udi_cdc_putc(usb_out[i]);
